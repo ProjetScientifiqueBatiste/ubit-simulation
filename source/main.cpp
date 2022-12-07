@@ -3,14 +3,7 @@
 
 MicroBit uBit;
 
-char prefix = 'b';
-char message[4] = "LT";
-
 int cpt = 0;
-
-int connected = 0;
-
-ManagedString rec; 
 
 // ================================================================================
 
@@ -35,12 +28,7 @@ void onButton(MicroBitEvent e)
 
 void onSerial(MicroBitEvent)
 {
-    rec = uBit.serial.readUntil(ManagedString("\n"), ASYNC);
-
-    // Write the data back to the serial port
-    // uBit.serial.printf("%d : %s\r \n", cpt, rec.toCharArray());
-
-    // uBit.display.scroll(cpt, 25);
+    ManagedString rec = uBit.serial.readUntil(ManagedString("\n"), ASYNC);
 
     uBit.radio.datagram.send(rec);
 
@@ -77,18 +65,11 @@ char *encrypt(const char *decrypted)
 
 void onData(MicroBitEvent)
 {
-    // Message reçu par RF
-    ManagedString message = uBit.radio.datagram.recv();
+    PacketBuffer rec(4);
 
-    char first_decrypted = decrypt(message.toCharArray())[0];
-    
-    // Si le premier caractère est 'b', on déchiffre le message et on le scroll
-    if (first_decrypted == prefix)
-    {
-        // uBit.display.scroll(decrypt(message.toCharArray()));
-        uBit.serial.printf("%s\r \n", decrypt(message.toCharArray()));
-    }
+    rec = uBit.radio.datagram.recv();
 
+    uBit.serial.send(rec);
 }
 
 int main()
@@ -101,9 +82,7 @@ int main()
     uBit.serial.baud(115200);
 
     uBit.messageBus.listen(MICROBIT_ID_SERIAL, MICROBIT_SERIAL_EVT_DELIM_MATCH, onSerial);
-
     uBit.serial.eventOn(ManagedString("\n"), ASYNC);
-
     uBit.serial.read(ASYNC);
 
     uBit.messageBus.listen(MICROBIT_ID_RADIO, MICROBIT_RADIO_EVT_DATAGRAM, onData);
@@ -120,12 +99,14 @@ int main()
 
     while (true)
     {
-        // Chiffrement du message
-        // cipher = encrypt(message);
+        PacketBuffer buffer(4);
 
-        // uBit.radio.datagram.send(cipher);
+        buffer[0] = 'a';
+        buffer[1] = 'b';
+        buffer[2] = 'c';
+        buffer[3] = 'd';
 
-        // uBit.display.scroll(message);
+        uBit.radio.datagram.send(buffer);
 
         uBit.sleep(2000);
     }
